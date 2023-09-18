@@ -1,0 +1,12 @@
+<component name="libraryTable">
+  <library name="Gradle: com.google.zxing:javase:3.5.2" type="java-imported" external-system-id="GRADLE">
+    <properties groupId="com.google.zxing" artifactId="javase" version="3.5.2" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.zxing/javase/3.5.2/b9b1eecd1032e57d086ae80019861f77e8b54752/javase-3.5.2.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/com.google.zxing/javase/3.5.2/41ce80b5c53036715d5ef01ada215b38263cd2bf/javase-3.5.2-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

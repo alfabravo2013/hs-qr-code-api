@@ -1,0 +1,14 @@
+type: edu
+files:
+  - name: src/qrcodeapi/Application.java
+    visible: true
+  - name: build.gradle
+    visible: true
+  - name: src/qrcodeapi/controller/QrCodeRestController.java
+    visible: true
+  - name: src/qrcodeapi/controller/DemoController.java
+    visible: true
+  - name: src/qrcodeapi/config/ApplicationConfig.java
+    visible: true
+  - name: test/QRCodeApiTest.java
+    visible: false
