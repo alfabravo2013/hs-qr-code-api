@@ -1,9 +1,11 @@
 package qrcodeapi.controller;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import qrcodeapi.service.ImageService;
 
@@ -17,22 +19,23 @@ public class QrCodeRestController {
         this.imageService = imageService;
     }
 
-    @GetMapping(path = "/api/info", produces = "application/json")
-    public Map<String, String> getInfo() {
-        return Map.of("info", "QR code generator");
+    @GetMapping(path = "/api/health")
+    @ResponseStatus(HttpStatus.OK)
+    public void ping() {
+
     }
 
     @GetMapping(path = "/api/qrcode")
     public ResponseEntity<?> getImage(
             @RequestParam String contents,
             @RequestParam int size,
-            @RequestParam String imgType
+            @RequestParam String type
     ) {
         try {
             var image = imageService.createImage(contents, size);
             return ResponseEntity
                     .ok()
-                    .contentType(getMediaType(imgType))
+                    .contentType(getMediaType(type))
                     .body(image);
         } catch (RuntimeException e) {
             return ResponseEntity
@@ -42,6 +45,9 @@ public class QrCodeRestController {
     }
 
     private MediaType getMediaType(String imgType) {
-        return MediaType.parseMediaType("image/" + imgType);
+        return switch (imgType) {
+            case "png", "jpeg", "gif" -> MediaType.parseMediaType("image/" + imgType);
+            default -> throw new  RuntimeException("Only png, jpeg and gif image types are supported");
+        };
     }
 }

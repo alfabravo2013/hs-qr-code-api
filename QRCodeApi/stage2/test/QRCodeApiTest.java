@@ -1,9 +1,11 @@
 import org.hyperskill.hstest.dynamic.DynamicTest;
 import org.hyperskill.hstest.dynamic.input.DynamicTesting;
+import org.hyperskill.hstest.exception.outcomes.WrongAnswer;
 import org.hyperskill.hstest.mocks.web.response.HttpResponse;
 import org.hyperskill.hstest.stage.SpringTest;
 import org.hyperskill.hstest.testcase.CheckResult;
 
+import java.lang.invoke.WrongMethodTypeException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
@@ -14,12 +16,7 @@ public class QRCodeApiTest extends SpringTest {
         var url = "/api/health";
         HttpResponse response = get(url).send();
 
-        if (response.getStatusCode() != 200) {
-            return CheckResult.wrong(
-                    "GET %s should respond with status code 200, responded with %d"
-                            .formatted(url, response.getStatusCode())
-            );
-        }
+        checkStatusCode(response, 200);
 
         return CheckResult.correct();
     }
@@ -28,21 +25,8 @@ public class QRCodeApiTest extends SpringTest {
         var url = "/api/qrcode";
         HttpResponse response = get(url).send();
 
-        if (response.getStatusCode() != 200) {
-            return CheckResult.wrong(
-                    "GET %s should respond with status code 200, responded with %d"
-                            .formatted(url, response.getStatusCode())
-            );
-        }
-
-        var expectedContentType = "image/png";
-        var contentType = response.getHeaders().get("Content-Type");
-        if (!Objects.equals(expectedContentType, contentType)) {
-            return CheckResult.wrong("""
-                    GET %s returned incorrect 'Content-Type' header. Expected "%s" but was "%s"
-                     """.formatted(url, expectedContentType, contentType)
-            );
-        }
+        checkStatusCode(response, 200);
+        checkContentType(response, "png");
 
         var expectedHash = "a370a8d3e1ee0f0184132a3c3b5d2952";
         var contentHash = getMD5Hash(response.getRawContent());
@@ -64,6 +48,29 @@ public class QRCodeApiTest extends SpringTest {
             this::testGetHealth,
             this::testGetQrCode
     };
+
+    private void checkStatusCode(HttpResponse response, int expected) {
+        var endpoint = response.getRequest().getEndpoint();
+        var actual = response.getStatusCode();
+        if (actual != expected) {
+            throw new WrongAnswer(
+                    "GET %s should respond with status code %d, responded with %d"
+                            .formatted(endpoint, expected, actual)
+            );
+        }
+    }
+
+    private void checkContentType(HttpResponse response, String imgType) {
+        var endpoint = response.getRequest().getEndpoint();
+        var expected = "image/" + imgType;
+        var actual = response.getHeaders().get("Content-Type");
+        if (!Objects.equals(expected, actual)) {
+            throw new WrongMethodTypeException("""
+                    GET %s returned incorrect 'Content-Type' header. Expected "%s" but was "%s"
+                     """.formatted(endpoint, expected, actual)
+            );
+        }
+    }
 
     private String getMD5Hash(byte[] rawContent) {
         try {

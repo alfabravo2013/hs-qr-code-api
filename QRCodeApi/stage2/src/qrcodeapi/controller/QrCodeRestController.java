@@ -18,9 +18,9 @@ public class QrCodeRestController {
         this.imageService = imageService;
     }
 
-    @GetMapping(path = "/api/health", produces = "application/json")
+    @GetMapping(path = "/api/health")
     @ResponseStatus(HttpStatus.OK)
-    public void getInfo() {
+    public void ping() {
 
     }
 

@@ -1,5 +1,6 @@
 import org.hyperskill.hstest.dynamic.DynamicTest;
 import org.hyperskill.hstest.dynamic.input.DynamicTesting;
+import org.hyperskill.hstest.exception.outcomes.WrongAnswer;
 import org.hyperskill.hstest.mocks.web.response.HttpResponse;
 import org.hyperskill.hstest.stage.SpringTest;
 import org.hyperskill.hstest.testcase.CheckResult;
@@ -10,12 +11,7 @@ public class QRCodeApiTest extends SpringTest {
         var url = "/api/health";
         HttpResponse response = get(url).send();
 
-        if (response.getStatusCode() != 200) {
-            return CheckResult.wrong(
-                    "GET %s should respond with status code 200, responded with %d"
-                            .formatted(url, response.getStatusCode())
-            );
-        }
+        checkStatusCode(response, 200);
 
         return CheckResult.correct();
     }
@@ -24,12 +20,7 @@ public class QRCodeApiTest extends SpringTest {
         var url = "/api/qrcode";
         HttpResponse response = get(url).send();
 
-        if (response.getStatusCode() != 501) {
-            return CheckResult.wrong(
-                    "GET %s should respond with status code 501, responded with %d"
-                            .formatted(url, response.getStatusCode())
-            );
-        }
+        checkStatusCode(response, 501);
 
         return CheckResult.correct();
     }
@@ -39,4 +30,15 @@ public class QRCodeApiTest extends SpringTest {
             this::testGetHealth,
             this::testGetQrCode
     };
+
+    private void checkStatusCode(HttpResponse response, int expected) {
+        var endpoint = response.getRequest().getEndpoint();
+        var actual = response.getStatusCode();
+        if (actual != expected) {
+            throw new WrongAnswer(
+                    "GET %s should respond with status code %d, responded with %d"
+                            .formatted(endpoint, expected, actual)
+            );
+        }
+    }
 }

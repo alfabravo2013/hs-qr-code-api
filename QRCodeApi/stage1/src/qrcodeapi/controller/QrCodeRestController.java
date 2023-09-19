@@ -8,14 +8,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class QrCodeRestController {
 
+    @GetMapping(path = "/api/health")
+    @ResponseStatus(HttpStatus.OK)
+    public void ping() {
+
+    }
+
     @GetMapping(path = "/api/qrcode")
     @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
     public void getImage() {
 
-    }
-
-    @GetMapping(path = "/api/health")
-    public HttpStatus getInfo() {
-        return HttpStatus.OK;
     }
 }

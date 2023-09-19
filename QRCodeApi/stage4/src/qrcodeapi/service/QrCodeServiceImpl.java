@@ -11,8 +11,8 @@ import java.awt.image.BufferedImage;
 
 @Service
 public class QrCodeServiceImpl implements ImageService {
-    private static final int minSize = 100;
-    private static final int maxSize = 1000;
+    private static final int minSize = 150;
+    private static final int maxSize = 350;
 
     @Override
     public BufferedImage createImage(String contents, int size) {
@@ -21,7 +21,7 @@ public class QrCodeServiceImpl implements ImageService {
         }
 
         if (size < minSize || size > maxSize) {
-            throw new RuntimeException("Min size is %d, max size is %d".formatted(minSize, maxSize));
+            throw new RuntimeException("Image size must be between %d and %d pixels".formatted(minSize, maxSize));
         }
 
         QRCodeWriter writer = new QRCodeWriter();
@@ -32,9 +32,7 @@ public class QrCodeServiceImpl implements ImageService {
                     size,
                     size
             );
-
             return MatrixToImageWriter.toBufferedImage(matrix);
-
         } catch (WriterException e) {
             throw new RuntimeException(e);
         }

@@ -1,9 +1,11 @@
 import org.hyperskill.hstest.dynamic.DynamicTest;
 import org.hyperskill.hstest.dynamic.input.DynamicTesting;
+import org.hyperskill.hstest.exception.outcomes.WrongAnswer;
 import org.hyperskill.hstest.mocks.web.response.HttpResponse;
 import org.hyperskill.hstest.stage.SpringTest;
 import org.hyperskill.hstest.testcase.CheckResult;
 
+import java.lang.invoke.WrongMethodTypeException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -12,55 +14,29 @@ import java.util.Objects;
 
 import static org.hyperskill.hstest.testing.expect.Expectation.expect;
 import static org.hyperskill.hstest.testing.expect.json.JsonChecker.isObject;
+import static org.hyperskill.hstest.testing.expect.json.JsonChecker.isString;
 
 public class QRCodeApiTest extends SpringTest {
+    private static final String BAD_SIZE_MSG = "Image size must be between 150 and 350 pixels";
+    private static final String BAD_TYPE_MSG = "Only png, jpeg and gif image types are supported";
+    private static final String BAD_CONTENTS_MSG = "Contents cannot be null or blank";
 
-    CheckResult testGetInfo() {
-        var url = "/api/info";
+    CheckResult testGetHealth() {
+        var url = "/api/health";
         HttpResponse response = get(url).send();
 
-        if (response.getStatusCode() != 200) {
-            return CheckResult.wrong(
-                    "GET %s should respond with status code 200, responded with %d"
-                            .formatted(url, response.getStatusCode())
-            );
-        }
-
-        if (!response.getJson().isJsonObject()) {
-            return CheckResult.wrong(
-                    "GET %s returned a wrong object, expected JSON but was %s"
-                            .formatted(url, response.getContent().getClass())
-            );
-        }
-
-        expect(response.getContent()).asJson().check(
-                isObject()
-                        .value("info", "QR code generator")
-        );
+        checkStatusCode(response, 200);
 
         return CheckResult.correct();
     }
 
     CheckResult testGetQrCode(String contents, int size, String imgType, String expectedHash) {
-        var url = "/api/qrcode?contents=%s&size=%d&imgType=%s"
+        var url = "/api/qrcode?contents=%s&size=%d&type=%s"
                 .formatted(encodeUrl(contents), size, imgType);
         HttpResponse response = get(url).send();
 
-        if (response.getStatusCode() != 200) {
-            return CheckResult.wrong(
-                    "GET %s should respond with status code 200, responded with %d"
-                            .formatted(url, response.getStatusCode())
-            );
-        }
-
-        var expectedContentType = "image/" + imgType;
-        var contentType = response.getHeaders().get("Content-Type");
-        if (!Objects.equals(expectedContentType, contentType)) {
-            return CheckResult.wrong("""
-                    GET %s returned incorrect 'Content-Type' header. Expected "%s" but was "%s"
-                     """.formatted(url, expectedContentType, contentType)
-            );
-        }
+        checkStatusCode(response, 200);
+        checkContentType(response, imgType);
 
         var contentHash = getMD5Hash(response.getRawContent());
         if (!contentHash.equals(expectedHash)) {
@@ -76,32 +52,15 @@ public class QRCodeApiTest extends SpringTest {
         return CheckResult.correct();
     }
 
-    CheckResult testGetQrCodeInvalidSize(int size, String imgType) {
-        var url = "/api/qrcode?contents=%s&size=%d&imgType=%s"
-                .formatted(encodeUrl("image size is not acceptable"), size, imgType);
+    CheckResult testGetQrCodeInvalidParams(String contents, int size, String imgType, String message) {
+        var url = "/api/qrcode?contents=%s&size=%d&type=%s"
+                .formatted(encodeUrl(contents), size, imgType);
+
+        System.out.println("Request: GET " + url);
         HttpResponse response = get(url).send();
 
-        if (response.getStatusCode() != 400) {
-            return CheckResult.wrong(
-                    "GET %s should respond with status code 400, responded with %d"
-                            .formatted(url, response.getStatusCode())
-            );
-        }
-
-        return CheckResult.correct();
-    }
-
-    CheckResult testGetQrCodeBlankContents() {
-        var url = "/api/qrcode?contents=%s&size=%d&imgType=%s"
-                .formatted(encodeUrl("  "), 200, "image/png");
-        HttpResponse response = get(url).send();
-
-        if (response.getStatusCode() != 400) {
-            return CheckResult.wrong(
-                    "GET %s should respond with status code 400, responded with %d"
-                            .formatted(url, response.getStatusCode())
-            );
-        }
+        checkStatusCode(response, 400);
+        checkErrorMessage(response, message);
 
         return CheckResult.correct();
     }
@@ -127,23 +86,61 @@ public class QRCodeApiTest extends SpringTest {
 
     @DynamicTest
     DynamicTesting[] tests = {
-            this::testGetInfo,
+            this::testGetHealth,
 
-            () -> testGetQrCode(contents[0], 200, "png", "c2617604f9698481be698106d7b690af"),
             () -> testGetQrCode(contents[1], 200, "jpeg", "a9e1e394f5766304127ba88bd9f0bd5a"),
             () -> testGetQrCode(contents[2], 200, "gif", "3d6cc8d84284c0d10af3370c1fa883a8"),
-            () -> testGetQrCode(contents[3], 400, "png", "da04f85a409d1d7381e7429753eedabe"),
-            () -> testGetQrCode(contents[4], 400, "jpeg", "234cbfee11c4b82e2241261520d6e04d"),
-            () -> testGetQrCode(contents[5], 400, "gif", "d4ecbb1db55a1afde5ba440b8f8a5c46"),
-            () -> testGetQrCode(contents[6], 100, "jpeg", "0951748cfcd6071e9e46bae785727782"),
-            () -> testGetQrCode(contents[7], 1000, "gif", "717b3e12b3cec3cd57d1161358424a9d"),
+            () -> testGetQrCode(contents[3], 300, "png", "e2e18076d34f09a01eb283c7b140b268"),
+            () -> testGetQrCode(contents[4], 300, "jpeg", "3f00dbd2593bdf4b229d6addf09464a4"),
+            () -> testGetQrCode(contents[5], 200, "gif", "db6ef9d4a2d81285c9f5ed85f870d092"),
+            () -> testGetQrCode(contents[6], 200, "jpeg", "401a4a780f22cd752b8162512d1eb3f8"),
+            () -> testGetQrCode(contents[7], 300, "gif", "d167d42b222297df6c754aea3273681f"),
 
-            () -> testGetQrCodeInvalidSize(99, "gif"),
-            () -> testGetQrCodeInvalidSize(-10, "png"),
-            () -> testGetQrCodeInvalidSize(1001, "gif"),
-
-            this::testGetQrCodeBlankContents
+            () -> testGetQrCodeInvalidParams(contents[0], 99, "gif", BAD_SIZE_MSG),
+            () -> testGetQrCodeInvalidParams(contents[0], 351, "png", BAD_SIZE_MSG),
+            () -> testGetQrCodeInvalidParams(contents[0], 451, "webp", BAD_SIZE_MSG),
+            () -> testGetQrCodeInvalidParams(contents[0], 200, "webp", BAD_TYPE_MSG),
+            () -> testGetQrCodeInvalidParams("", 200, "webp", BAD_CONTENTS_MSG),
+            () -> testGetQrCodeInvalidParams("   ", 500, "webp", BAD_CONTENTS_MSG)
     };
+
+    private void checkStatusCode(HttpResponse response, int expected) {
+        var endpoint = response.getRequest().getEndpoint();
+        var actual = response.getStatusCode();
+        if (actual != expected) {
+            throw new WrongAnswer(
+                    "GET %s should respond with status code %d, responded with %d"
+                            .formatted(endpoint, expected, actual)
+            );
+        }
+    }
+
+    private void checkContentType(HttpResponse response, String imgType) {
+        var endpoint = response.getRequest().getEndpoint();
+        var expected = "image/" + imgType;
+        var actual = response.getHeaders().get("Content-Type");
+        if (!Objects.equals(expected, actual)) {
+            throw new WrongMethodTypeException("""
+                    GET %s returned incorrect 'Content-Type' header. Expected "%s" but was "%s"
+                     """.formatted(endpoint, expected, actual)
+            );
+        }
+    }
+
+    private void checkErrorMessage(HttpResponse response, String message) {
+        var endpoint = response.getRequest().getEndpoint();
+        if (!response.getJson().isJsonObject()) {
+            throw new  WrongAnswer(
+                    "GET %s returned a wrong object, expected JSON but was %s"
+                            .formatted(endpoint, response.getContent().getClass())
+            );
+        }
+
+        expect(response.getContent()).asJson().check(
+                isObject()
+                        .value("error", isString(message))
+        );
+    }
 
     private String getMD5Hash(byte[] rawContent) {
         try {
