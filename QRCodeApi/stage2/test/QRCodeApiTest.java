@@ -5,7 +5,6 @@ import org.hyperskill.hstest.mocks.web.response.HttpResponse;
 import org.hyperskill.hstest.stage.SpringTest;
 import org.hyperskill.hstest.testcase.CheckResult;
 
-import java.lang.invoke.WrongMethodTypeException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
@@ -32,10 +31,12 @@ public class QRCodeApiTest extends SpringTest {
         var contentHash = getMD5Hash(response.getRawContent());
         if (!contentHash.equals(expectedHash)) {
             return CheckResult.wrong("""
-                    GET %s failed to return a correct image.
+                    Response: GET %s
+                     
+                    Response body does not contain a correct image:
                     Expected image hash %s, but was %s
-                    
                     Make sure the size, the contents and the format of the image are correct.
+                    
                     """.formatted(url, expectedHash, contentHash)
             );
         }
@@ -53,9 +54,13 @@ public class QRCodeApiTest extends SpringTest {
         var endpoint = response.getRequest().getEndpoint();
         var actual = response.getStatusCode();
         if (actual != expected) {
-            throw new WrongAnswer(
-                    "GET %s should respond with status code %d, responded with %d"
-                            .formatted(endpoint, expected, actual)
+            throw new WrongAnswer("""
+                    Request: GET %s
+                    
+                    Response has incorrect status code:
+                    Expected %d, but responded with %d
+                    
+                    """.formatted(endpoint, expected, actual)
             );
         }
     }
@@ -65,9 +70,13 @@ public class QRCodeApiTest extends SpringTest {
         var expected = "image/" + imgType;
         var actual = response.getHeaders().get("Content-Type");
         if (!Objects.equals(expected, actual)) {
-            throw new WrongMethodTypeException("""
-                    GET %s returned incorrect 'Content-Type' header. Expected "%s" but was "%s"
-                     """.formatted(endpoint, expected, actual)
+            throw new WrongAnswer("""
+                    Request: GET %s
+                    
+                    Response has incorrect 'Content-Type' header:
+                    Expected "%s" but responded with "%s"
+                    
+                    """.formatted(endpoint, expected, actual)
             );
         }
     }

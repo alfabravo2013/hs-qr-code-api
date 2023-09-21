@@ -35,9 +35,13 @@ public class QRCodeApiTest extends SpringTest {
         var endpoint = response.getRequest().getEndpoint();
         var actual = response.getStatusCode();
         if (actual != expected) {
-            throw new WrongAnswer(
-                    "GET %s should respond with status code %d, responded with %d"
-                            .formatted(endpoint, expected, actual)
+            throw new WrongAnswer("""
+                    Request: GET %s
+                    
+                    Response has incorrect status code:
+                    Expected %d, but responded with %d
+                    
+                    """.formatted(endpoint, expected, actual)
             );
         }
     }
